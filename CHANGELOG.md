@@ -23,6 +23,8 @@
     function, a nonexistent `compute` export, and a broken `reduce` call).
 - Tooling:
   - Docs are now generated with TypeDoc (previously JSDoc).
+  - The project now uses npm instead of yarn (`package-lock.json` replaces
+    `yarn.lock`).
   - CI type-checks and builds on Node 22 and 24, and fixes doc publishing (it was
     gated on a `main` branch that doesn't exist; the branch is `master`).
 

@@ -50,7 +50,7 @@
     "test": "node --test --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info \"src/**/*.test.ts\"",
     "cov-html": "genhtml --output-directory=./coverage lcov.info",
     "doc": "typedoc",
-    "prepublishOnly": "yarn clean && yarn typecheck && yarn test && yarn build"
+    "prepublishOnly": "npm run clean && npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

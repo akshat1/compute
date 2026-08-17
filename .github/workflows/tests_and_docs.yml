@@ -21,18 +21,18 @@ jobs:
         name: Setup Node
         with:
           node-version: ${{ matrix.node-version }}
-          cache: yarn
+          cache: npm
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
       - name: Type Check
-        run: yarn typecheck
+        run: npm run typecheck
       - name: Test
-        run: yarn test
+        run: npm test
       - name: Build
-        run: yarn build
+        run: npm run build
       - name: Generate Docs
         if: github.ref == 'refs/heads/master' && matrix.node-version == '22.x'
-        run: yarn doc
+        run: npm run doc
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/master' && matrix.node-version == '22.x'

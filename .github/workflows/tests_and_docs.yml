@@ -1,9 +1,10 @@
-# https://github.com/marketplace/actions/github-action-for-yarn
-
 name: Run Tests
 
 on:
   push:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -11,27 +12,30 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [22.x, 24.x]
 
     steps:
       - uses: actions/checkout@v4
         name: Checkout
-      - uses: borales/actions-yarn@v3.0.0
-        name: Install Dependencies
+      - uses: actions/setup-node@v4
+        name: Setup Node
         with:
-            cmd: install
-      - uses: borales/actions-yarn@v3.0.0
-        name: Test
-        with:
-          cmd: test
+          node-version: ${{ matrix.node-version }}
+          cache: yarn
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+      - name: Type Check
+        run: yarn typecheck
+      - name: Test
+        run: yarn test
+      - name: Build
+        run: yarn build
       - name: Generate Docs
-        uses: borales/actions-yarn@v3.0.0
-        if: github.ref == 'refs/heads/main'
-        with:
-          cmd: doc
+        if: github.ref == 'refs/heads/master' && matrix.node-version == '22.x'
+        run: yarn doc
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master' && matrix.node-version == '22.x'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages

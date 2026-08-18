@@ -1,15 +1,17 @@
 {
   "name": "compute",
-  "description": "A simple reactive programming library.",
+  "description": "A simple reactive programming library implementing signals.",
   "keywords": [
     "reactive",
+    "signal",
+    "signals",
     "observable",
     "typescript"
   ],
   "homepage": "http://akshat1.github.io/compute/",
   "license": "MIT",
   "author": "akshat1",
-  "version": "2.0.0",
+  "version": "3.0.0-beta.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -23,7 +25,8 @@
   "files": [
     "dist",
     "src",
-    "!src/**/*.test.ts"
+    "!src/**/*.test.ts",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=18"

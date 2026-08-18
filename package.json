@@ -1,6 +1,6 @@
 {
   "name": "compute",
-  "description": "A simple reactive programming library built on signals.",
+  "description": "A simple reactive programming library implementing signals.",
   "keywords": [
     "reactive",
     "signal",

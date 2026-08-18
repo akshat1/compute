@@ -1,6 +1,6 @@
 # Compute [![Run Tests](https://github.com/akshat1/compute/actions/workflows/tests_and_docs.yml/badge.svg)](https://github.com/akshat1/compute/actions/workflows/tests_and_docs.yml)
 
-An extremely simple reactive programming library built on signals. Written in TypeScript, zero dependencies, ships with type definitions.
+An extremely simple reactive programming library implementing signals. Written in TypeScript, zero dependencies, ships with type definitions.
 
 > **3.0.0 is currently in beta** (`npm install compute@beta`). Issues and feedback welcome.
 

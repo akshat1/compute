@@ -2,6 +2,7 @@
 
 An extremely simple reactive programming library implementing signals. Written in TypeScript, zero dependencies, ships with type definitions.
 
+> [!NOTE]
 > **3.0.0 is currently in beta** (`npm install compute@beta`). Issues and feedback welcome.
 
 ```ts

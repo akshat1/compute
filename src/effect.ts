@@ -11,7 +11,7 @@ import type { EffectOptions, Subscription } from "./types.ts";
 const MAX_RUNS = 100;
 
 /**
- * Run `fn` once immediately, tracking every observable it reads, and re-run
+ * Run `fn` once immediately, tracking every signal it reads, and re-run
  * it whenever any of those change. Dependencies are re-tracked on every run,
  * so conditional reads narrow or widen them dynamically.
  *
@@ -33,8 +33,8 @@ const MAX_RUNS = 100;
  * @returns a {@link Subscription}; `unsubscribe()` disposes the effect.
  *
  * @example
- * const a = observable(1);
- * const b = observable(2);
+ * const a = signal(1);
+ * const b = signal(2);
  * const dispose = effect(() => console.log(a() + b()));  // logs 3
  * a(2); b(3);  // logs 5, once, on the next microtask
  * dispose.unsubscribe();
@@ -69,7 +69,7 @@ export function effect(fn: () => void, options?: EffectOptions): Subscription {
           if (++runs > MAX_RUNS) {
             dispose();
             throw new Error(
-              "Cycle detected: an effect kept re-running without stabilizing (does it write to an observable it reads?). The effect has been disposed."
+              "Cycle detected: an effect kept re-running without stabilizing (does it write to a signal it reads?). The effect has been disposed."
             );
           }
           run();

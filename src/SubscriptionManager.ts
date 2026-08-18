@@ -2,7 +2,7 @@ import type { Observer, Subscription } from "./types.ts";
 
 /**
  * Provides a way to manage subscriptions and notify observers. Used
- * internally by Observable, not meant to be used directly.
+ * internally by Signal, not meant to be used directly.
  */
 export class SubscriptionManager<T> {
   /** Used to call observers in order of subscription. */

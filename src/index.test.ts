@@ -1,28 +1,28 @@
 import test from "node:test";
 import assert from "node:assert";
 import {
-  observable,
-  from,
+  signal,
+  computed,
   effect,
   untrack,
-  isObservable,
-  type Observable,
+  isSignal,
+  type Signal,
 } from "./index.ts";
 
 // Type-level: a read-only computed must not be assignable to a writable
-// Observable (TypeScript's arity rule would otherwise allow it).
-// @ts-expect-error - ReadonlyObservable is not a writable Observable
-const _writableHole: Observable<number> = from(() => 1);
+// Signal (TypeScript's arity rule would otherwise allow it).
+// @ts-expect-error - ReadonlySignal is not a writable Signal
+const _writableHole: Signal<number> = computed(() => 1);
 void _writableHole;
 
 /** Wait for all pending microtasks (incl. the effect flush) to complete. */
 const settled = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-test("from", async (t) => {
+test("computed", async (t) => {
   await t.test("is lazy: does not evaluate until first read", () => {
-    const a = observable(1);
+    const a = signal(1);
     let evaluations = 0;
-    const double = from(() => {
+    const double = computed(() => {
       evaluations++;
       return a() * 2;
     });
@@ -32,9 +32,9 @@ test("from", async (t) => {
   });
 
   await t.test("memoizes: repeated reads do not re-evaluate", () => {
-    const a = observable(1);
+    const a = signal(1);
     let evaluations = 0;
-    const double = from(() => {
+    const double = computed(() => {
       evaluations++;
       return a() * 2;
     });
@@ -45,9 +45,9 @@ test("from", async (t) => {
   });
 
   await t.test("does not evaluate on writes, only on the next read", () => {
-    const a = observable(1);
+    const a = signal(1);
     let evaluations = 0;
-    const double = from(() => {
+    const double = computed(() => {
       evaluations++;
       return a() * 2;
     });
@@ -61,21 +61,21 @@ test("from", async (t) => {
   });
 
   await t.test("tracks multiple dependencies automatically", () => {
-    const a = observable(1);
-    const b = observable(2);
-    const c = observable(3);
-    const sum = from(() => a() + b() + c());
+    const a = signal(1);
+    const b = signal(2);
+    const c = signal(3);
+    const sum = computed(() => a() + b() + c());
     assert.strictEqual(sum(), 6);
     b(10);
     assert.strictEqual(sum(), 14);
   });
 
   await t.test("re-tracks dependencies dynamically on each evaluation", () => {
-    const useFirst = observable(true);
-    const first = observable("first");
-    const second = observable("second");
+    const useFirst = signal(true);
+    const first = signal("first");
+    const second = signal("second");
     let evaluations = 0;
-    const chosen = from(() => {
+    const chosen = computed(() => {
       evaluations++;
       return useFirst() ? first() : second();
     });
@@ -94,16 +94,16 @@ test("from", async (t) => {
   });
 
   await t.test("is read-only: writing throws a TypeError", () => {
-    const a = observable(1);
-    const double = from(() => a() * 2);
+    const a = signal(1);
+    const double = computed(() => a() * 2);
     assert.throws(() => (double as unknown as (v: number) => number)(42), TypeError);
   });
 
   await t.test("equal re-evaluation cuts off downstream propagation", () => {
-    const a = observable(1);
-    const sign = from(() => Math.sign(a()));
+    const a = signal(1);
+    const sign = computed(() => Math.sign(a()));
     let downstreamEvaluations = 0;
-    const scaled = from(() => {
+    const scaled = computed(() => {
       downstreamEvaluations++;
       return sign() * 10;
     });
@@ -114,12 +114,12 @@ test("from", async (t) => {
   });
 
   await t.test("diamond dependencies evaluate once per change, glitch-free", () => {
-    const a = observable(1);
-    const left = from(() => a() * 2);
-    const right = from(() => a() + 1);
+    const a = signal(1);
+    const left = computed(() => a() * 2);
+    const right = computed(() => a() + 1);
     let evaluations = 0;
     const seen: number[][] = [];
-    const bottom = from(() => {
+    const bottom = computed(() => {
       evaluations++;
       seen.push([left(), right()]);
       return left() + right();
@@ -136,28 +136,28 @@ test("from", async (t) => {
   });
 
   await t.test("computeds chain", () => {
-    const a = observable(1);
-    const double = from(() => a() * 2);
-    const quadruple = from(() => double() * 2);
+    const a = signal(1);
+    const double = computed(() => a() * 2);
+    const quadruple = computed(() => double() * 2);
     assert.strictEqual(quadruple(), 4);
     a(3);
     assert.strictEqual(quadruple(), 12);
   });
 
-  await t.test("is an observable", () => {
-    const a = observable(1);
-    assert.strictEqual(isObservable(from(() => a())), true);
+  await t.test("is a signal", () => {
+    const a = signal(1);
+    assert.strictEqual(isSignal(computed(() => a())), true);
   });
 
   await t.test("throws on a self-referential cycle", () => {
     const cyclic: () => number = () => loop();
-    const loop = from(() => cyclic() + 1);
+    const loop = computed(() => cyclic() + 1);
     assert.throws(() => loop(), /Cycle detected/);
   });
 
   await t.test("subscribe notifies synchronously with new and old values", () => {
-    const a = observable(1);
-    const double = from(() => a() * 2);
+    const a = signal(1);
+    const double = computed(() => a() * 2);
     const notifications: [number, number][] = [];
     double.subscribe((newValue, oldValue) => notifications.push([newValue, oldValue]));
     a(2);
@@ -169,8 +169,8 @@ test("from", async (t) => {
   });
 
   await t.test("subscribe does not notify when the computed value is unchanged", () => {
-    const a = observable(1);
-    const sign = from(() => Math.sign(a()));
+    const a = signal(1);
+    const sign = computed(() => Math.sign(a()));
     let notifications = 0;
     sign.subscribe(() => notifications++);
     a(5); // sign stays 1
@@ -180,9 +180,9 @@ test("from", async (t) => {
   });
 
   await t.test("unsubscribing the last subscriber makes the computed lazy again", () => {
-    const a = observable(1);
+    const a = signal(1);
     let evaluations = 0;
-    const double = from(() => {
+    const double = computed(() => {
       evaluations++;
       return a() * 2;
     });
@@ -197,15 +197,15 @@ test("from", async (t) => {
   });
 
   await t.test("repeated subscribe with the same observer returns the same subscription", () => {
-    const a = observable(1);
-    const double = from(() => a() * 2);
+    const a = signal(1);
+    const double = computed(() => a() * 2);
     const observer = () => {};
     assert.strictEqual(double.subscribe(observer), double.subscribe(observer));
   });
 
   await t.test("an observer may unsubscribe the last subscription and write the source", () => {
-    const source = observable(0);
-    const mirror = from(() => source());
+    const source = signal(0);
+    const mirror = computed(() => source());
     const seen: number[] = [];
     const subscription = mirror.subscribe((newValue) => {
       seen.push(newValue);
@@ -218,10 +218,10 @@ test("from", async (t) => {
     assert.strictEqual(mirror(), 2);
   });
 
-  await t.test("writing to an observable inside a computed evaluation throws", () => {
-    const source = observable(1);
-    const sideChannel = observable(0);
-    const impure = from(() => {
+  await t.test("writing to a signal inside a computed evaluation throws", () => {
+    const source = signal(1);
+    const sideChannel = signal(0);
+    const impure = computed(() => {
       sideChannel(source() * 100);
       return source();
     });
@@ -235,12 +235,12 @@ test("from", async (t) => {
   });
 
   await t.test("the purity guard applies at any computed nesting depth and unwinds", () => {
-    const sideChannel = observable(0);
-    const inner = from(() => {
+    const sideChannel = signal(0);
+    const inner = computed(() => {
       sideChannel(1);
       return 0;
     });
-    const outer = from(() => inner() + 1);
+    const outer = computed(() => inner() + 1);
     assert.throws(() => outer(), {
       name: "TypeError",
       message: /must be pure/,
@@ -250,9 +250,9 @@ test("from", async (t) => {
   });
 
   await t.test("a computed remains usable after its fn throws", () => {
-    const source = observable(1);
+    const source = signal(1);
     let shouldThrow = true;
-    const flaky = from(() => {
+    const flaky = computed(() => {
       if (shouldThrow) {
         throw new Error("evaluation failed");
       }
@@ -266,11 +266,11 @@ test("from", async (t) => {
   });
 
   await t.test("a mutual cycle formed after the first evaluation throws", () => {
-    const flag = observable(false);
-    const base = observable(1);
+    const flag = signal(false);
+    const base = signal(1);
     let readOther: () => number = () => 0;
-    const inner = from((): number => (flag() ? readOther() : base()));
-    const outer = from(() => inner() + 1);
+    const inner = computed((): number => (flag() ? readOther() : base()));
+    const outer = computed(() => inner() + 1);
     readOther = () => outer();
     assert.strictEqual(outer(), 2); // acyclic while flag is false
     flag(true); // now inner -> outer -> inner
@@ -278,8 +278,8 @@ test("from", async (t) => {
   });
 
   await t.test("a stale wrapper unsubscribe after teardown and resubscribe is inert", () => {
-    const source = observable(1);
-    const mirror = from(() => source());
+    const source = signal(1);
+    const mirror = computed(() => source());
     const observer = () => {};
     const staleWrapper = mirror.subscribe(observer);
     staleWrapper.unsubscribe(); // full teardown
@@ -298,7 +298,7 @@ test("from", async (t) => {
 
 test("effect", async (t) => {
   await t.test("runs immediately on creation", () => {
-    const a = observable(1);
+    const a = signal(1);
     let observedValue: number | undefined;
     effect(() => {
       observedValue = a();
@@ -307,8 +307,8 @@ test("effect", async (t) => {
   });
 
   await t.test("batches same-tick writes into one re-run seeing final values", async () => {
-    const a = observable(1);
-    const b = observable(2);
+    const a = signal(1);
+    const b = signal(2);
     const runs: number[] = [];
     effect(() => runs.push(a() + b()));
     a(10);
@@ -320,9 +320,9 @@ test("effect", async (t) => {
   });
 
   await t.test("notification crosses multiple degrees of dependency", async () => {
-    const state = observable(1);
-    const first = from(() => state() * 2);
-    const second = from(() => first() + 1);
+    const state = signal(1);
+    const first = computed(() => state() * 2);
+    const second = computed(() => first() + 1);
     const runs: number[] = [];
     effect(() => runs.push(second()));
     state(10);
@@ -331,8 +331,8 @@ test("effect", async (t) => {
   });
 
   await t.test("does not re-run when a computed dependency cuts off", async () => {
-    const a = observable(1);
-    const sign = from(() => Math.sign(a()));
+    const a = signal(1);
+    const sign = computed(() => Math.sign(a()));
     let runs = 0;
     effect(() => {
       sign();
@@ -346,9 +346,9 @@ test("effect", async (t) => {
     assert.strictEqual(runs, 2);
   });
 
-  await t.test("does not re-run for writes to unrelated observables", async () => {
-    const related = observable(1);
-    const unrelated = observable(2);
+  await t.test("does not re-run for writes to unrelated signals", async () => {
+    const related = signal(1);
+    const unrelated = signal(2);
     let runs = 0;
     effect(() => {
       related();
@@ -360,9 +360,9 @@ test("effect", async (t) => {
   });
 
   await t.test("re-tracks dependencies dynamically", async () => {
-    const useFirst = observable(true);
-    const first = observable(1);
-    const second = observable(2);
+    const useFirst = signal(true);
+    const first = signal(1);
+    const second = signal(2);
     let runs = 0;
     effect(() => {
       runs++;
@@ -387,7 +387,7 @@ test("effect", async (t) => {
   });
 
   await t.test("sync effects re-run at each write", () => {
-    const a = observable(1);
+    const a = signal(1);
     const runs: number[] = [];
     effect(() => runs.push(a()), { sync: true });
     a(2);
@@ -396,7 +396,7 @@ test("effect", async (t) => {
   });
 
   await t.test("unsubscribe disposes the effect", async () => {
-    const a = observable(1);
+    const a = signal(1);
     let runs = 0;
     const subscription = effect(() => {
       a();
@@ -409,7 +409,7 @@ test("effect", async (t) => {
   });
 
   await t.test("an effect writing its own dependency re-runs until stable", () => {
-    const a = observable(1);
+    const a = signal(1);
     const subscription = effect(
       () => {
         const value = a();
@@ -425,7 +425,7 @@ test("effect", async (t) => {
   });
 
   await t.test("an effect that never stabilizes throws and is disposed", () => {
-    const a = observable(1);
+    const a = signal(1);
     let runs = 0;
     effect(
       () => {
@@ -445,7 +445,7 @@ test("effect", async (t) => {
   });
 
   await t.test("an effect that disposes itself mid-run does not run again", () => {
-    const a = observable(0);
+    const a = signal(0);
     let runs = 0;
     const subscription = effect(
       () => {
@@ -464,7 +464,7 @@ test("effect", async (t) => {
   });
 
   await t.test("a deep cascade of sync effects throws instead of overflowing the stack", () => {
-    const chain = Array.from({ length: 102 }, () => observable(0));
+    const chain = Array.from({ length: 102 }, () => signal(0));
     const subscriptions = chain.slice(0, -1).map((source, i) =>
       effect(
         () => {
@@ -477,9 +477,9 @@ test("effect", async (t) => {
     subscriptions.forEach((subscription) => subscription.unsubscribe());
   });
 
-  await t.test("a sync effect may write unrelated observables without a false cycle", () => {
-    const source = observable(1);
-    const target = observable(0);
+  await t.test("a sync effect may write unrelated signals without a false cycle", () => {
+    const source = signal(1);
+    const target = signal(0);
     const subscription = effect(
       () => {
         target(source() * 10);
@@ -497,8 +497,8 @@ test("effect", async (t) => {
 
 test("untrack", async (t) => {
   await t.test("reads inside untrack are not tracked", async () => {
-    const tracked = observable(1);
-    const ignored = observable(2);
+    const tracked = signal(1);
+    const ignored = signal(2);
     let runs = 0;
     let lastSum = 0;
     effect(() => {
@@ -516,10 +516,10 @@ test("untrack", async (t) => {
   });
 
   await t.test("works inside computeds", () => {
-    const tracked = observable(1);
-    const ignored = observable(100);
+    const tracked = signal(1);
+    const ignored = signal(100);
     let evaluations = 0;
-    const combined = from(() => {
+    const combined = computed(() => {
       evaluations++;
       return tracked() + untrack(() => ignored());
     });

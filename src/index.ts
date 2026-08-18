@@ -1,11 +1,11 @@
-export { observable, isObservable } from "./Observable.ts";
-export { from } from "./from.ts";
+export { signal, isSignal } from "./signal.ts";
+export { computed } from "./computed.ts";
 export { effect } from "./effect.ts";
 export { untrack } from "./tracking.ts";
 export type {
   EffectOptions,
-  Observable,
   Observer,
-  ReadonlyObservable,
+  ReadonlySignal,
+  Signal,
   Subscription,
 } from "./types.ts";

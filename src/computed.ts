@@ -10,13 +10,13 @@ import {
   type DependencyNode,
   type DependencyRecord,
 } from "./tracking.ts";
-import type { Observer, ReadonlyObservable, Subscription } from "./types.ts";
+import type { Observer, ReadonlySignal, Subscription } from "./types.ts";
 
 /**
- * Define a read-only observable computed from the values of other
- * observables. Dependencies are tracked automatically: whatever observables
- * `fn` reads during evaluation become its dependencies, re-tracked on every
- * evaluation (so conditional reads narrow or widen them dynamically).
+ * Define a read-only signal computed from the values of other signals.
+ * Dependencies are tracked automatically: whatever signals `fn` reads during
+ * evaluation become its dependencies, re-tracked on every evaluation (so
+ * conditional reads narrow or widen them dynamically).
  *
  * Evaluation is lazy and memoized: `fn` does not run until the computed is
  * first read, and re-runs only when a read (or an effect/subscription)
@@ -24,18 +24,19 @@ import type { Observer, ReadonlyObservable, Subscription } from "./types.ts";
  * equal value (strict equality) stops propagation — dependents do not
  * re-evaluate.
  *
- * Computed observables cannot be written to; calling one with an argument
- * throws a TypeError.
+ * `fn` must be pure and synchronous: writing to a signal during a computed
+ * evaluation throws a TypeError. Computed signals cannot be written to;
+ * calling one with an argument throws a TypeError.
  *
  * @example
- * const a = observable(1);
- * const b = observable(2);
- * const sum = from(() => a() + b());
+ * const a = signal(1);
+ * const b = signal(2);
+ * const sum = computed(() => a() + b());
  * sum();  // 3 — evaluated on this first read
  * a(2);   // nothing evaluated yet
  * sum();  // 4 — evaluated now
  */
-export function from<T>(fn: () => T): ReadonlyObservable<T> {
+export function computed<T>(fn: () => T): ReadonlySignal<T> {
   let value: T;
   let version = 0;
   let lastValidated = -1;
@@ -72,7 +73,7 @@ export function from<T>(fn: () => T): ReadonlyObservable<T> {
       // dependency chain means the chain leads back here: a cycle formed
       // after the first evaluation (e.g. behind a conditional read).
       if (validating) {
-        throw new Error("Cycle detected: a computed observable depends on itself.");
+        throw new Error("Cycle detected: a computed signal depends on itself.");
       }
       if (initialized && lastValidated === currentClock()) {
         return;
@@ -90,14 +91,14 @@ export function from<T>(fn: () => T): ReadonlyObservable<T> {
     },
   };
 
-  function computed(...args: unknown[]): T {
+  function computedSignal(...args: unknown[]): T {
     if (args.length) {
       throw new TypeError(
-        "Computed observables are read-only; write to their source observables instead."
+        "Computed signals are read-only; write to their source signals instead."
       );
     }
     if (computing) {
-      throw new Error("Cycle detected: a computed observable read itself.");
+      throw new Error("Cycle detected: a computed signal read itself.");
     }
     node.updateIfNecessary();
     track(node);
@@ -112,7 +113,7 @@ export function from<T>(fn: () => T): ReadonlyObservable<T> {
   let bridge: Subscription | null = null;
   const wrappers = new Map<Observer<T>, Subscription>();
 
-  computed.subscribe = (observer: Observer<T>): Subscription => {
+  computedSignal.subscribe = (observer: Observer<T>): Subscription => {
     const existing = wrappers.get(observer);
     if (existing) {
       return existing;
@@ -123,7 +124,7 @@ export function from<T>(fn: () => T): ReadonlyObservable<T> {
       let first = true;
       bridge = effect(
         () => {
-          const current = computed();
+          const current = computedSignal();
           if (!first && current !== previous) {
             subscriptionManager!.notify(current, previous);
           }
@@ -154,5 +155,5 @@ export function from<T>(fn: () => T): ReadonlyObservable<T> {
     return wrapper;
   };
 
-  return computed as ReadonlyObservable<T>;
+  return computedSignal as ReadonlySignal<T>;
 }

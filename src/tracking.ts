@@ -1,9 +1,9 @@
 /**
- * Internal dependency-tracking machinery shared by observables, computed
- * observables, and effects. Not part of the public API.
+ * Internal dependency-tracking machinery shared by signals, computed
+ * signals, and effects. Not part of the public API.
  *
  * The model is push-pull with a global version clock:
- * - Every observable write bumps the global clock and stamps the observable
+ * - Every signal write bumps the global clock and stamps the signal
  *   with the new clock value as its version.
  * - Derived nodes (computeds, effects) remember, for each dependency, the
  *   version they last saw. A node is stale iff, after recursively validating
@@ -21,7 +21,7 @@
 export interface DependencyNode {
   /** Bumped (to the then-current clock) whenever the node's value changes. */
   readonly version: number;
-  /** Bring the node up to date (recompute if stale). No-op for plain observables. */
+  /** Bring the node up to date (recompute if stale). No-op for plain signals. */
   updateIfNecessary(): void;
 }
 
@@ -33,7 +33,7 @@ let clock = 0;
 /** The current value of the global version clock. */
 export const currentClock = (): number => clock;
 
-/** Advance the global clock; called on every observable write that changes the value. */
+/** Advance the global clock; called on every signal write that changes the value. */
 export const bumpClock = (): number => ++clock;
 
 let computedDepth = 0;
@@ -47,7 +47,7 @@ export const exitComputed = (): void => {
 };
 
 /**
- * Whether a computed evaluation is currently in progress. Observable writes
+ * Whether a computed evaluation is currently in progress. Signal writes
  * are forbidden during computed evaluation (computed functions must be
  * pure), matching the TC39 Signals proposal's semantics.
  */
@@ -63,7 +63,7 @@ const frames: (Map<DependencyNode, number> | null)[] = [];
 /**
  * Register a read of `node` with the active tracking frame, if any. The
  * version is captured at first read — if the computation itself later
- * changes the dependency (an effect writing an observable it read), the
+ * changes the dependency (an effect writing a signal it read), the
  * record correctly shows the computation as stale.
  */
 export function track(node: DependencyNode): void {
@@ -90,13 +90,13 @@ export function withTracking<T>(fn: () => T): { result: T; deps: DependencyRecor
 }
 
 /**
- * Read observables inside `fn` without registering them as dependencies of
+ * Read signals inside `fn` without registering them as dependencies of
  * the enclosing computed or effect.
  *
  * @example
- * const count = observable(0);
- * const label = observable("count");
- * const display = from(() => `${untrack(() => label())}: ${count()}`);
+ * const count = signal(0);
+ * const label = signal("count");
+ * const display = computed(() => `${untrack(() => label())}: ${count()}`);
  * // display re-evaluates when count changes, but not when label changes.
  */
 export function untrack<T>(fn: () => T): T {

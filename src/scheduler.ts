@@ -1,7 +1,7 @@
 /**
  * Internal effect scheduler. Not part of the public API.
  *
- * Effects register here; every observable write that changes a value calls
+ * Effects register here; every signal write that changes a value calls
  * `onWrite()`. Synchronous effects are validated and re-run immediately at
  * the write; asynchronous (default) effects are validated and re-run in a
  * single microtask, so several writes in the same tick coalesce into one
@@ -35,7 +35,7 @@ export function removeEffect(node: EffectNode): void {
   (node.sync ? syncEffects : asyncEffects).delete(node);
 }
 
-/** Called after every observable write that actually changed the value. */
+/** Called after every signal write that actually changed the value. */
 export function onWrite(): void {
   if (asyncEffects.size && !flushScheduled) {
     flushScheduled = true;

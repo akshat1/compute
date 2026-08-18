@@ -1,21 +1,21 @@
 import test from "node:test";
 import assert from "node:assert";
-import { observable, isObservable } from "./Observable.ts";
+import { signal, isSignal } from "./signal.ts";
 
-test("Observable", async (t) => {
-  await t.test("should create an observable", async () => {
-    const obs = observable(1);
+test("Signal", async (t) => {
+  await t.test("should create a signal", async () => {
+    const obs = signal(1);
     assert.strictEqual(obs(), 1);
   });
 
-  await t.test("should update the value of an observable", async () => {
-    const obs = observable(2);
+  await t.test("should update the value of a signal", async () => {
+    const obs = signal(2);
     obs(3);
     assert.strictEqual(obs(), 3);
   });
 
   await t.test("should notify subscribers when the value changes", async () => {
-    const obs = observable(3);
+    const obs = signal(3);
     let notifiedValue;
     obs.subscribe((newValue) => {
       notifiedValue = newValue;
@@ -25,7 +25,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("should notify subscribers with the old value as well", async () => {
-    const obs = observable(3);
+    const obs = signal(3);
     let notifiedOldValue;
     obs.subscribe((_newValue, oldValue) => {
       notifiedOldValue = oldValue;
@@ -35,7 +35,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("should notify multiple subscribers when the value changes", async () => {
-    const obs = observable(4);
+    const obs = signal(4);
     let notifiedValue1;
     let notifiedValue2;
     obs.subscribe((newValue) => {
@@ -50,7 +50,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("multiple subscribe calls should result in a single subscription", async () => {
-    const obs = observable(5);
+    const obs = signal(5);
     const observer = () => {};
     const subscription1 = obs.subscribe(observer);
     const subscription2 = obs.subscribe(observer);
@@ -58,7 +58,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("repeated subscribe() calls should not result in multiple notifications", async () => {
-    const obs = observable(6);
+    const obs = signal(6);
     let notificationCount = 0;
     const observer = () => {
       notificationCount++;
@@ -70,7 +70,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("should not notify subscribers when the value does not change", async () => {
-    const obs = observable(4);
+    const obs = signal(4);
     let notifiedValue;
     obs.subscribe((newValue) => {
       notifiedValue = newValue;
@@ -80,7 +80,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("should treat an explicit set to undefined as a change", async () => {
-    const obs = observable<number | undefined>(4);
+    const obs = signal<number | undefined>(4);
     let notificationCount = 0;
     obs.subscribe(() => {
       notificationCount++;
@@ -91,7 +91,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("should unsubscribe a subscriber", async () => {
-    const obs = observable(5);
+    const obs = signal(5);
     let notifiedValue;
     const subscription = obs.subscribe((newValue) => {
       notifiedValue = newValue;
@@ -102,14 +102,14 @@ test("Observable", async (t) => {
   });
 
   await t.test("should not throw when unsubscribing a subscriber multiple times", async () => {
-    const obs = observable(6);
+    const obs = signal(6);
     const subscription = obs.subscribe(() => {});
     subscription.unsubscribe();
     subscription.unsubscribe();
   });
 
   await t.test("should still notify remaining subscribers when one unsubscribes mid-notification", async () => {
-    const obs = observable(1);
+    const obs = signal(1);
     const notified: string[] = [];
     const subscription1 = obs.subscribe(() => {
       notified.push("first");
@@ -125,7 +125,7 @@ test("Observable", async (t) => {
   });
 
   await t.test("should not notify a subscriber removed mid-notification by an earlier subscriber", async () => {
-    const obs = observable(1);
+    const obs = signal(1);
     const notified: string[] = [];
     let secondSubscription: { unsubscribe(): void };
     obs.subscribe(() => {
@@ -140,17 +140,17 @@ test("Observable", async (t) => {
   });
 });
 
-test("isObservable", async (t) => {
-  await t.test("should return true for an observable", () => {
-    const obs = observable(1);
-    assert.strictEqual(isObservable(obs), true);
+test("isSignal", async (t) => {
+  await t.test("should return true for a signal", () => {
+    const obs = signal(1);
+    assert.strictEqual(isSignal(obs), true);
   });
 
-  await t.test("should return false for a non-observable", () => {
-    assert.strictEqual(isObservable(1), false);
+  await t.test("should return false for a non-signal", () => {
+    assert.strictEqual(isSignal(1), false);
   });
 
   await t.test("should return false for a plain function", () => {
-    assert.strictEqual(isObservable(() => {}), false);
+    assert.strictEqual(isSignal(() => {}), false);
   });
 });

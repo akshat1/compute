@@ -1,8 +1,10 @@
 {
   "name": "compute",
-  "description": "A simple reactive programming library.",
+  "description": "A simple reactive programming library built on signals.",
   "keywords": [
     "reactive",
+    "signal",
+    "signals",
     "observable",
     "typescript"
   ],

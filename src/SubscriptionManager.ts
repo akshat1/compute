@@ -36,6 +36,11 @@ export class SubscriptionManager<T> {
     return subscription;
   }
 
+  /** The number of active subscriptions. */
+  get size(): number {
+    return this.subscriptionsMap.size;
+  }
+
   /**
    * Calls all observers in order of subscription. Observers that unsubscribe
    * while a notification is in flight are not called for that notification
